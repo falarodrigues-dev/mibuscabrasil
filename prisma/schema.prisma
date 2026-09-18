@@ -1,0 +1,142 @@
+// Schema Prisma — MiBusca Brasil
+// Provider: Postgres (Supabase ou Neon) em produção, conforme especificado no prompt.
+// Para desenvolvimento local nesta sessão, o provider é trocado temporariamente
+// para "sqlite" (ver README, seção "Banco de dados local para desenvolvimento").
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadStatus {
+  Novo
+  Em_contato
+  Qualificado
+  Fechado
+  Perdido
+  Fora_do_perfil
+}
+
+enum EventType {
+  page_view
+  section_view
+  scroll_depth
+  form_start
+  form_step_1_complete
+  form_submit
+  whatsapp_click
+  cta_click
+  faq_open
+}
+
+model Session {
+  id              String   @id // UUID gerado no client, persistido em cookie de 1ª parte
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  lastSection     String? // última seção vista (via IntersectionObserver)
+  maxScrollDepth  Int      @default(0) // 0/25/50/75/100
+  timeOnPageMs    Int      @default(0)
+
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  utmContent      String?
+  utmTerm         String?
+  fbclid          String?
+  gclid           String?
+  referrer        String?
+  pageUrl         String?
+  device          String? // mobile | tablet | desktop
+  userAgent       String?
+
+  events          Event[]
+  leads           Lead[]
+
+  @@map("sessions")
+}
+
+model Event {
+  id         String    @id @default(uuid())
+  createdAt  DateTime  @default(now())
+  type       EventType
+  metadata   Json? // ex: { "section": "cases" }, { "depth": 50 }, { "cta": "hero_principal" }, { "question": "..." }
+
+  sessionId  String
+  session    Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([type])
+  @@map("events")
+}
+
+model Lead {
+  id                    String     @id @default(uuid())
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  status                LeadStatus @default(Novo)
+  parcial                Boolean    @default(true) // true = só etapa 1 concluída
+
+  // Etapa 1
+  nome                  String
+  whatsapp              String
+  nomeLoja              String
+
+  // Etapa 2
+  cidadeUf              String?
+  plataformas           Json? // string[]: ["ifood","99food","keeta"] ou ["nenhuma"]
+  faturamentoMensal     String?
+  dificuldadePrincipal  String?
+  consentimentoWhatsapp Boolean    @default(false)
+
+  // Rastreamento
+  utmSource             String?
+  utmMedium             String?
+  utmCampaign           String?
+  utmContent            String?
+  utmTerm               String?
+  fbclid                String?
+  gclid                 String?
+  referrer              String?
+  pageUrl               String?
+  device                String?
+
+  sessionId             String?
+  session               Session?   @relation(fields: [sessionId], references: [id])
+
+  // Admin
+  anotacoes             String?
+  duplicado             Boolean    @default(false)
+
+  @@index([status])
+  @@index([whatsapp])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model Settings {
+  id                       String   @id @default("default")
+  whatsappNumber           String // formato E.164 sem símbolos, ex: 5571993827236
+  mensagemTemplate         String   @default("Olá! Sou {nome}, da loja {loja}, em {cidade_uf}. Preenchi o formulário no site e quero falar sobre a gestão do meu delivery.")
+  redirectSeconds          Int      @default(3) // 0 = desativado
+  numerosRotacao           Json? // string[] opcional, desligado por padrão
+  rotacaoAtiva             Boolean  @default(false)
+  metaPixelId              String?
+  ga4Id                    String?
+  updatedAt                DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  @@map("admin_users")
+}
