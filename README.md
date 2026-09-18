@@ -83,15 +83,15 @@ Conforme instrução do próprio prompt ("Se algum ponto ficar ambíguo,
 implemente a opção mais simples que atenda ao requisito e registre a
 decisão no README"):
 
-1. **Logo em SVG**: o arquivo oficial não foi enviado junto com o prompt.
-   Foi implementado um placeholder em `src/components/landing/Logo.tsx`
-   (um "M" com seta ascendente + wordmark "mibuscabrasil"), reconstruído a
-   partir da descrição do manual de marca ("construção personalizada da
-   letra M, integrada a uma seta ascendente" + "seta presente ao final do
-   nome"). O arquivo está claramente marcado com `TODO(logo-real)` — basta
-   substituir o `<svg>` interno pelo arquivo oficial quando ele for
-   enviado. O mesmo placeholder gerou `src/app/icon.png` (favicon) e
-   `public/images/logo.png` (usado no JSON-LD).
+1. **Logo**: os arquivos oficiais (PNG, com transparência) foram enviados
+   pelo cliente e estão em `public/images/logo-icon.webp` (ícone "M" +
+   seta, cor cheia), `public/images/logo-full-dark.webp` (logotipo
+   completo para fundo escuro, usado no header/footer) e
+   `public/images/logo-full-light.webp` (variante para fundo claro,
+   reservada para uso futuro fora do site). `src/components/landing/Logo.tsx`
+   renderiza esses arquivos via `next/image`. O favicon (`src/app/icon.png`)
+   e a imagem usada no JSON-LD (`public/images/logo.png`) foram gerados a
+   partir do ícone oficial sobre um fundo arredondado `#0C0C0C`.
 2. **Print do depoimento**: a imagem enviada foi salva em
    `public/images/depoimento-valeria-dom-paolo.webp` (convertida para
    WebP, conforme requisito técnico de performance) e usada na Seção 5,
